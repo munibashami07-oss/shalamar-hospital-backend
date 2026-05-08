@@ -24,7 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 
 // ─── MediAI Chat Route ────────────────────────────────────────────
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 const MEDIAI_SYSTEM_PROMPT = `You are MediAI, a warm and knowledgeable health assistant for Shalamar Hospital.
 
@@ -48,6 +48,9 @@ Once they reply to your triage question, respond using this structure:
 Always speak in a calm, caring, easy-to-understand tone. Avoid heavy medical jargon.`;
 
 app.post('/api/chat', async (req, res) => {
+  if (!openai) {
+    return res.status(503).json({ error: 'MediAI is not configured. Please add OPENAI_API_KEY.' });
+  }
   try {
     const { messages, image } = req.body;
 
@@ -112,6 +115,13 @@ app.use((req, res) => {
 // ─── Start Server ────────────────────────────────────────────────
 async function startServer() {
   await testConnection();
+  // Auto-initialize database tables on first run
+  try {
+    const { initializeDatabase } = require('./database/init-db');
+    await initializeDatabase();
+  } catch (e) {
+    console.log('DB init skipped:', e.message);
+  }
   app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🏥  Shalamar Hospital — Unified Server');
     console.log(`🌐  http://localhost:${PORT}`);

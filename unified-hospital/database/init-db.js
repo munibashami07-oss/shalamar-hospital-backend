@@ -10,6 +10,8 @@ const config = {
 
 const DB_NAME = process.env.DB_NAME || 'shalamar_hospital';
 
+// Run directly via: node database/init-db.js
+// Or imported by server.js on startup
 async function initializeDatabase() {
   let connection;
   try {
@@ -106,4 +108,8 @@ async function initializeDatabase() {
   }
 }
 
-initializeDatabase();
+module.exports = { initializeDatabase };
+
+if (require.main === module) {
+  initializeDatabase();
+}
